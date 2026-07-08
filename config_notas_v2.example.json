@@ -1,0 +1,17 @@
+{
+  "configuracoes_emissor": {
+    "cnpj_prestador": "00000000000000",
+    "codigo_servico_paulistana": "02660"
+  },
+  "agendamento_notas": [
+    {
+      "cnpj_cliente": "00.000.000/0000-00",
+      "razao_social_placeholder": "Razao Social Cliente LTDA",
+      "email_cliente": "cliente@example.com",
+      "valor_nota": 1000.00,
+      "dia_emissao": 5,
+      "descricao_personalizada": "Prestação de serviço em tecnologia da informação",
+      "ultima_emissao": ""
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "NomeAutomacao": "Emissao NFS-e SP Capital - Senha Web",
+  "UrlInicial": "https://nfe.prefeitura.sp.gov.br/login.aspx",
+  "Etapas": [
+    {
+      "Ordem": 1,
+      "NomeEtapa": "Login Intermediario Opcional",
+      "Opcional": true,
+      "Acoes": [
+        {
+          "Descricao": "Acionar Login unico quando disponivel",
+          "PlaywrightAcao": "ClicarSeExistir",
+          "SeletorHtml": "button.oauth-button",
+          "Opcional": true
+        }
+      ]
+    },
+    {
+      "Ordem": 2,
+      "NomeEtapa": "Autenticacao e Login",
+      "Acoes": [
+        {
+          "Descricao": "Ativar escuta de pop-ups e dialogos",
+          "PlaywrightAcao": "TratarDialogos"
+        },
+        {
+          "Descricao": "Inserir CNPJ do Emissor",
+          "PlaywrightAcao": "PreencherTexto",
+          "SeletorHtml": "#cpfCnpj",
+          "ValorDinamicoChave": "CnpjPrestador"
+        },
+        {
+          "Descricao": "Inserir Senha Web",
+          "PlaywrightAcao": "PreencherTexto",
+          "SeletorHtml": "#password",
+          "ValorDinamicoChave": "SenhaWeb"
+        },
+        {
+          "Descricao": "Disparar Clique de Login",
+          "PlaywrightAcao": "ClicarBotao",
+          "SeletorHtml": "button.btn-entrar[type=\"submit\"]"
+        }
+      ]
+    },
+    {
+      "Ordem": 3,
+      "NomeEtapa": "Preenchimento do Tomador de Servico",
+      "Acoes": [
+        {
+          "Descricao": "Acessar Menu Lateral Emissao",
+          "PlaywrightAcao": "ClicarBotao",
+          "SeletorHtml": "#ctl00_wpMenuLateral_mnuRotinasn3[href=\"nota.aspx\"], #ctl00_wpMenuLateral_mnuRotinasn3 a[href=\"nota.aspx\"]"
+        },
+        {
+          "Descricao": "Preencher CNPJ do Cliente",
+          "PlaywrightAcao": "PreencherTexto",
+          "SeletorHtml": "#ctl00_body_tbCPFCNPJTomador",
+          "ValorDinamicoChave": "CnpjCliente"
+        },
+        {
+          "Descricao": "Forcar validacao cadastral (Blur)",
+          "PlaywrightAcao": "DispararBlur",
+          "SeletorHtml": "#ctl00_body_tbCPFCNPJTomador"
+        },
+        {
+          "Descricao": "Aguardar Retorno Assincrono do Painel",
+          "PlaywrightAcao": "AguardarCarregamento"
+        },
+        {
+          "Descricao": "Avancar para Etapa 2",
+          "PlaywrightAcao": "ClicarBotao",
+          "SeletorHtml": "#ctl00_body_btAvancar"
+        }
+      ]
+    },
+    {
+      "Ordem": 4,
+      "NomeEtapa": "Discriminacao e Valores Financeiros",
+      "Acoes": [
+        {
+          "Descricao": "Injetar Texto Corporeo da NF",
+          "PlaywrightAcao": "PreencherTexto",
+          "SeletorHtml": "#ctl00_body_tbDiscriminacao",
+          "ValorDinamicoChave": "DescricaoServico"
+        },
+        {
+          "Descricao": "Injetar Valor Bruto do Servico",
+          "PlaywrightAcao": "PreencherTexto",
+          "SeletorHtml": "#ctl00_body_tbValor",
+          "ValorDinamicoChave": "ValorNota"
+        }
+      ]
+    },
+    {
+      "Ordem": 5,
+      "NomeEtapa": "Finalizacao da Emissao",
+      "Acoes": [
+        {
+          "Descricao": "Disparar Emissao Final da Nota",
+          "PlaywrightAcao": "ClicarBotao",
+          "SeletorHtml": "#ctl00_body_btEmitir, input[id*='btEmitir' i], input[name*='btEmitir' i], button[id*='btEmitir' i], input[value='Emitir' i]"
+        },
+        {
+          "Descricao": "Aguardar Processamento Final da Emissao",
+          "PlaywrightAcao": "AguardarCarregamento"
+        }
+      ]
+    }
+  ]
+}

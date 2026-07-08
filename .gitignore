@@ -1,0 +1,44 @@
+## Visual Studio / .NET Build Artifacts
+.vs/
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Log]/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider / Resharper / WebStorm
+.idea/
+*.sln.DotSettings.user
+
+## Visual Studio Code
+.vscode/
+
+## NuGet Packages
+*.nupkg
+**/packages/*
+!**/packages/build/
+
+## Publish Output
+/publish/
+
+## User-specific / Local Configuration Files (Sensitive Data)
+appsettings.json
+config_notas_v2.json
+
+## Application Runtime / Outputs / Logs
+downloads/
+logs/
+*.log
+
+## OS / System Temp Files
+[Tt]humbs.db
+.DS_Store
+*.tmp
+*.swp
