@@ -19,9 +19,9 @@ Este repositório apresenta a **Contract-Driven Automation Engine (CDAE)**, uma 
 
 Para manter este arquivo conciso e focado no guia rápido de inicialização, a documentação de engenharia e decisões arquiteturais foi dividida em guias de leitura dedicados:
 
-*   **[Documento de Arquitetura e Decisões de Projeto](file:///f:/Projetos/AI/EmissorNotaFiscal-RPA/docs/architecture.md)**: Detalha a motivação do design, princípios de separação de responsabilidades (Clean Architecture/DDD), uso de telemetria produtiva nativa e justificativa da stack tecnológica.
-*   **[Funcionamento Interno do Motor (CDAE - Internals)](file:///f:/Projetos/AI/EmissorNotaFiscal-RPA/docs/engine.md)**: Explica como o grafo de etapas em JSON é interpretado, as primitivas DOM suportadas, o mecanismo de late binding e o tratamento híbrido de Captcha (Vision AI + Modo Assistido Humano).
-*   **[Primeiro Caso de Uso: Emissão de NFS-e Paulistana](file:///f:/Projetos/AI/EmissorNotaFiscal-RPA/docs/use_case_nfse.md)**: Apresenta a lógica do caso prático utilizado para testar a engine, diagramas Mermaid do ciclo de processamento e justificativas de integração.
+*   **[Documento de Arquitetura e Decisões de Projeto](docs/architecture.md)**: Detalha a motivação do design, princípios de separação de responsabilidades (Clean Architecture/DDD), uso de telemetria produtiva nativa e justificativa da stack tecnológica.
+*   **[Funcionamento Interno do Motor (CDAE - Internals)](docs/engine.md)**: Explica como o grafo de etapas em JSON é interpretado, as primitivas DOM suportadas, o mecanismo de late binding e o tratamento híbrido de Captcha (Vision AI + Modo Assistido Humano).
+*   **[Primeiro Caso de Uso: Emissão de NFS-e Paulistana](docs/use_case_nfse.md)**: Apresenta a lógica do caso prático utilizado para testar a engine, diagramas Mermaid do ciclo de processamento e justificativas de integração.
 
 ---
 

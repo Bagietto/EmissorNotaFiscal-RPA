@@ -109,7 +109,7 @@ sequenceDiagram
 
 ## 4. Estrutura de Contrato e Exemplo de Payload
 
-Para a emissão de nota em São Paulo, o interpretador lê o contrato do arquivo [receita_paulistana.json](file:///f:/Projetos/AI/EmissorNotaFiscal-RPA/receita_paulistana.json) e realiza o processamento unindo-o com os dados estruturados do faturamento mapeados em [config_notas_v2.json](file:///f:/Projetos/AI/EmissorNotaFiscal-RPA/config_notas_v2.json).
+Para a emissão de nota em São Paulo, o interpretador lê o contrato do arquivo [receita_paulistana.json](../receita_paulistana.json) e realiza o processamento unindo-o com os dados estruturados do faturamento mapeados em [config_notas_v2.json](../config_notas_v2.json).
 
 ### Mapeamento de Chaves Dinâmicas do Caso de Uso
 
