@@ -1,106 +1,68 @@
-# 🏢 Emissor de Nota Fiscal Eletrônica (NFS-e) - RPA Paulistana
+# ⚙️ Contract-Driven Automation Engine (CDAE)
 
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blueviolet.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Playwright](https://img.shields.io/badge/Playwright-Chromium-blue.svg)](https://playwright.dev/dotnet/)
-[![Architecture](https://img.shields.io/badge/Architecture-DDD%20Clean-brightgreen.svg)]()
+[![Architecture](https://img.shields.io/badge/Architecture-Clean%20%7C%20DDD-brightgreen.svg)]()
+[![Observability](https://img.shields.io/badge/Observability-OpenTelemetry-orange.svg)]()
 
-Este projeto é uma automação robotizada de processos (RPA) implementada como um **Worker Process em .NET 8**, utilizando o **Microsoft Playwright** para emular interações em navegador de forma robusta e otimizada. O principal objetivo é automatizar o fluxo completo de login, preenchimento, emissão, consulta e download do PDF oficial das Notas Fiscais de Serviços Eletrônicas (NFS-e) diretamente no portal da **Prefeitura do Município de São Paulo (PMSP / NFS-e Paulistana)**.
-
----
-
-## ⚡ Principais Funcionalidades
-
-*   **Motor Baseado em Contratos (Dinamismo)**: As etapas de navegação e interações HTML não estão hardcoded. O robô interpreta uma receita estruturada em JSON ([receita_paulistana.json](file:///f:/Projetos/AI/playwright/EmissorNotaFiscal/receita_paulistana.json)), permitindo ajustes de seletores ou inclusão de novos passos sem necessidade de recompilar a aplicação.
-*   **Resolução de Captcha via Vision AI**: Ao deparar-se com desafios de Captcha na autenticação do portal (`pmspauth`), o robô captura o elemento da imagem do Captcha, envia para modelos de computação visual (como `gemini-2.5-flash`) via API compatível com OpenAI, e insere a resposta de forma autônoma.
-*   **Modo Assistido de Fallback (Manual)**: Caso todas as tentativas automáticas de resolução da IA falhem ou a funcionalidade esteja desabilitada, o robô abre o navegador com interface gráfica (`Headless: false`), pausa a execução e aguarda que o operador resolva o desafio manualmente, retomando a execução de forma autônoma logo em seguida.
-*   **Consulta Pós-Emissão e Download do PDF**: Logo após disparar a emissão da nota, o robô executa a consulta retroativa filtrando por CPF/CNPJ do tomador e competência atual. Ele identifica o link dinâmico da nota gerada na janela popup de resultados e efetua o download do arquivo PDF oficial no diretório local.
-*   **Fail-Fast de Permissões**: Antes de inicializar recursos pesados do navegador, a automação valida a existência e a permissão de escrita no diretório parametrizado para downloads, reportando falhas de configuração imediatamente.
+Um motor de automação web resiliente, orientado a contratos declarativos em .NET 8 com Microsoft Playwright e Inteligência Computacional Aplicada.
 
 ---
 
-## 🏗️ Arquitetura e Estrutura do Projeto
+## 1. Visão Geral
 
-O projeto adota uma estrutura modular inspirada nos princípios de DDD (*Domain-Driven Design*), isolando regras de negócio de detalhes de infraestrutura e persistência:
+Este repositório apresenta a **Contract-Driven Automation Engine (CDAE)**, uma engine de execução projetada para interpretar e operacionalizar fluxos de automação web complexos definidos dinamicamente em tempo de execução via contratos JSON. A premissa central de design do projeto é a dissociação completa entre a inteligência de manipulação do navegador (infraestrutura) e as regras que descrevem a jornada do usuário (negócio/processo).
+
+---
+
+## 📖 Documentação Técnica Detalhada
+
+Para manter este arquivo conciso e focado no guia rápido de inicialização, a documentação de engenharia e decisões arquiteturais foi dividida em guias de leitura dedicados:
+
+*   **[Documento de Arquitetura e Decisões de Projeto](file:///f:/Projetos/AI/EmissorNotaFiscal-RPA/docs/architecture.md)**: Detalha a motivação do design, princípios de separação de responsabilidades (Clean Architecture/DDD), uso de telemetria produtiva nativa e justificativa da stack tecnológica.
+*   **[Funcionamento Interno do Motor (CDAE - Internals)](file:///f:/Projetos/AI/EmissorNotaFiscal-RPA/docs/engine.md)**: Explica como o grafo de etapas em JSON é interpretado, as primitivas DOM suportadas, o mecanismo de late binding e o tratamento híbrido de Captcha (Vision AI + Modo Assistido Humano).
+*   **[Primeiro Caso de Uso: Emissão de NFS-e Paulistana](file:///f:/Projetos/AI/EmissorNotaFiscal-RPA/docs/use_case_nfse.md)**: Apresenta a lógica do caso prático utilizado para testar a engine, diagramas Mermaid do ciclo de processamento e justificativas de integração.
+
+---
+
+## 🏗️ Estrutura do Projeto
+
+O repositório está organizado sob os princípios da Arquitetura Limpa (Clean Architecture), garantindo testabilidade e separação lógica:
 
 ```text
 EmissorNotaFiscal/
 │
-├── EmissorNotaFiscal.sln                    # Arquivo da Solução (.NET Solution)
-├── appsettings.json                         # Parâmetros operacionais do robô
-├── receita_paulistana.json                  # Receita passo a passo interpretada pelo motor
-├── config_notas_v2.json                     # Notas fiscais agendadas para processamento
+├── EmissorNotaFiscal.sln                    # Arquivo de Solução (.NET)
+├── appsettings.json                         # Configurações de infraestrutura do robô e chaves de IA
+├── receita_paulistana.json                  # Contrato descritivo de etapas (JSON)
+├── config_notas_v2.json                     # Payload e agendamentos lógicos de emissão
+│
+├── docs/                                    # Manuais de engenharia detalhados
+│   ├── architecture.md                      # Decisões de arquitetura e stack tecnológica
+│   ├── engine.md                            # Internals do motor de execução
+│   └── use_case_nfse.md                     # Caso de uso real de NFS-e Paulistana
 │
 ├── src/
-│   └── EmissorNotaFiscal/                   # Projeto Principal (Worker Process)
-│       ├── Program.cs                       # Bootstrapping e Injeção de Dependência
-│       ├── Worker.cs                        # BackgroundService hospedado
-│       ├── Application/                     # Orquestrador de fluxo e carregamento de contratos
-│       ├── Configuration/                   # Classes de opções/configurações fortemente tipadas
-│       ├── Domain/                          # Interfaces e Modelos de Domínio
-│       │   ├── Interfaces/                  # Contratos e Abstrações
-│       │   └── Models/                      # Modelos e Entidades de Domínio
-│       ├── Infrastructure/                  # Implementações concretas (Playwright, Storage, etc.)
-│       └── EmissorNotaFiscal.csproj         # Arquivo do Projeto Principal
+│   └── EmissorNotaFiscal/                   # Projeto Principal (Worker Service)
+│       ├── Program.cs                       # Inicialização e Injeção de Dependências (DI)
+│       ├── Worker.cs                        # BackgroundService que gerencia a periodicidade das execuções
+│       ├── Application/                     # Orquestrador de fluxo de negócio (FaturamentoOrchestrator)
+│       ├── Configuration/                   # Classes de mapeamento de opções fortemente tipadas
+│       ├── Domain/                          # Núcleo declarativo do sistema (Modelos e Interfaces)
+│       └── Infrastructure/                  # Implementações de tecnologias concretas (Playwright, JSON)
 │
 └── tests/
-    └── EmissorNotaFiscal.Tests/             # Projeto de Testes Unitários
-        ├── EmissorNotaFiscal.Tests.csproj   # Arquivo do Projeto de Testes
-        └── ...                              # Estruturas e classes de testes unitários
-```
-
----
-
-## ⚙️ Fluxo de Execução Técnica
-
-Abaixo está o diagrama do ciclo de vida de uma rodada de faturamento executada pelo RPA:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant W as Worker (BackgroundService)
-    participant O as FaturamentoOrchestrator
-    participant R as JsonConfigRepository
-    participant E as ContractBasedAutomationEngine
-    participant P as Playwright (Browser)
-
-    W->>W: Aguarda intervalo de execução (ex: 24h)
-    W->>O: Invoca RunAsync()
-    O->>R: Carrega receita_paulistana.json
-    R-->>O: Retorna FluxoAutomacaoContrato
-    O->>R: Carrega config_notas_v2.json
-    R-->>O: Retorna ConfigFaturamento
-    O->>O: Seleciona nota agendada e monta dicionário de dados
-    O->>E: Executa ExecutarFluxoContratoAsync(contrato, dados)
-    E->>P: Inicializa Chromium e abre IPage
-    E->>P: Navega para a UrlInicial
-    loop Para cada Etapa e Ação na Receita
-        E->>P: Executa Passo (Navegar, Clicar, Preencher, Blur, etc.)
-        alt Captcha visível no Login (pmspauth)
-            alt Resolução Automática Ativa (Vision AI)
-                E->>P: Captura imagem do Captcha
-                E->>E: Envia imagem para a API de Vision (Gemini)
-                E->>P: Preenche input#ans e envia
-            else Resolução Automática Falhou ou Inativa AND Modo Assistido Ativo
-                E->>P: Abre navegador visível e aguarda resolução humana
-            end
-        end
-    end
-    alt Consulta pós-emissão abre popup
-        P-->>E: Entrega novo contexto de página
-        E->>P: Continua o fluxo na janela de resultados
-    end
-    P-->>E: Dispara evento de Download do PDF
-    E->>E: Salva arquivo PDF com prefixo único de timestamp
-    E-->>O: Retorna caminho absoluto do arquivo PDF
-    O->>W: Conclusão com sucesso do ciclo
+    └── EmissorNotaFiscal.Tests/             # Projeto de testes de unidade e mock (xUnit / NSubstitute)
 ```
 
 ---
 
 ## 🔧 Configuração e Preparação
 
-### 1. Parâmetros da Aplicação (`appsettings.json`)
-Configure o comportamento global da automação:
+### 1. Parâmetros Globais do Motor (`appsettings.json`)
+
+Configure os recursos de infraestrutura e comportamento cognitivo da engine.
+
 ```json
 {
   "Automation": {
@@ -128,22 +90,25 @@ Configure o comportamento global da automação:
 }
 ```
 
-### 2. Contrato de Notas Fiscais (`config_notas_v2.json`)
-Cadastre os dados de emissão e os agendamentos das notas:
+### 2. Payload de Execução de Negócio (`config_notas_v2.json`)
+
+Defina os dados dinâmicos específicos das faturas que serão aplicados aos contratos lógicos do motor.
+
 ```json
 {
-  "Emissor": {
-    "Usuario": "SEU_USUARIO_PMSP",
-    "SenhaWeb": "SUA_SENHA_WEB"
+  "configuracoes_emissor": {
+    "cnpj_prestador": "00000000000000",
+    "codigo_servico_paulistana": "02660"
   },
-  "Agendamentos": [
+  "agendamento_notas": [
     {
-      "CnpjCliente": "12345678000199",
-      "CodigoServico": "03233",
-      "ValorServico": "1500.00",
-      "DescricaoServico": "Consultoria e desenvolvimento de sistemas de automação.",
-      "Aliquota": "2.00",
-      "EmailCliente": "financeiro@cliente.com"
+      "cnpj_cliente": "12345678000199",
+      "razao_social_placeholder": "Razao Social Cliente LTDA",
+      "email_cliente": "cliente@example.com",
+      "valor_nota": 1500.00,
+      "dia_emissao": 5,
+      "descricao_personalizada": "Consultoria e desenvolvimento de sistemas de automação de processos baseados em contratos.",
+      "ultima_emissao": ""
     }
   ]
 }
@@ -155,47 +120,38 @@ Cadastre os dados de emissão e os agendamentos das notas:
 
 ### Pré-requisitos
 1.  **SDK do .NET 8.0** instalado na máquina.
-2.  Ferramenta de comandos do PowerShell ou Terminal.
+2.  PowerShell ou terminal Bash moderno.
 
-### Passos para Inicialização
+### Inicialização Passo a Passo
 
 1.  **Restaurar as dependências do projeto**:
     ```bash
     dotnet restore
     ```
 
-2.  **Instalar os binários do navegador necessários para o Playwright**:
-    Caso execute pela primeira vez na máquina, instale os navegadores do Playwright usando o comando abaixo:
+2.  **Instalar os navegadores do Playwright**:
+    Compile o projeto para gerar os executáveis locais do Playwright e em seguida instale as instâncias de navegadores requeridas:
     ```bash
-    # Execute a compilação primeiro para gerar a ferramenta do Playwright
     dotnet build
     
-    # Instale os navegadores
+    # Executar a instalação do driver de browser do Chromium
     pwsh src/EmissorNotaFiscal/bin/Debug/net8.0/playwright.ps1 install chromium
     ```
 
-3.  **Rodar a aplicação**:
+3.  **Executar o Worker**:
     ```bash
-    dotnet run
+    dotnet run --project src/EmissorNotaFiscal/EmissorNotaFiscal.csproj
     ```
 
 ---
 
-## 🔒 Recomendações de Segurança
+## 🔒 Segurança em Produção
 
-> [!WARNING]
-> Nunca envie suas senhas e chaves de acesso diretamente em repositórios Git públicos ou compartilhados.
+> 🛑 **Importante**: Nunca armazene credenciais de acesso ou chaves de API cruas nos arquivos JSON de configuração dentro do controle de versão Git.
 
-Para ambientes de homologação e produção, prefira gerenciar dados sensíveis (como a propriedade `SenhaWeb`) utilizando:
-*   **User Secrets** do .NET em ambiente local de desenvolvimento.
-*   **Variáveis de Ambiente** (`Environment Variables`) no servidor onde o RPA rodará.
-
----
-
-## 🗺️ Próximas Funcionalidades (Roadmap)
-
-- [ ] **Envio Automático do PDF da NF-e para o Cliente**: Módulo integrado para disparar e-mails contendo o PDF oficial anexado assim que o download for finalizado pelo robô.
-- [ ] **Persistência de Logs em Arquivos `.txt`**: Registro estruturado e rotativo de logs locais para auditoria facilitada de erros de rede, falhas de seletor ou falhas operacionais do portal.
+Para implantações profissionais, a injeção da variável sensitiva `Automation:SenhaWeb` deve ser configurada utilizando os provedores nativos de configuração do .NET:
+*   **Ambiente de Desenvolvimento**: Utilize o gerenciador de segredos locais do .NET (`dotnet user-secrets`).
+*   **Ambiente de Produção**: Injete chaves através de **Variáveis de Ambiente** (`Environment Variables`) mapeadas no servidor host ou utilize cofres de chaves dedicados (Azure Key Vault, AWS Secrets Manager, HashiCorp Vault).
 
 ---
-Este projeto foi desenvolvido para fins de estudo, demostração tecnica e portifolio profissional. O uso em ambiente real deve considerar adequações de segurança, proteção de credenciais, gestão de senhas e chaves de acesso e eventuais atualizações de segurança do portal de serviços da prefeitura. 
+*Este repositório foi desenvolvido sob conceitos de engenharia de software de nível corporativo para servir como demonstração de competências em arquitetura orientada a dados, resiliência de processos distribuídos e desenvolvimento moderno em ecossistemas .NET.*
