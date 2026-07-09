@@ -25,38 +25,27 @@ O projeto adota uma estrutura modular inspirada nos princípios de DDD (*Domain-
 ```text
 EmissorNotaFiscal/
 │
-├── Program.cs                                # Bootstrapping, DI (Injeção de Dependência) e Configurações
-├── Worker.cs                                 # Serviço hospedado (BackgroundService) com execução recorrente
+├── EmissorNotaFiscal.sln                    # Arquivo da Solução (.NET Solution)
+├── appsettings.json                         # Parâmetros operacionais do robô
+├── receita_paulistana.json                  # Receita passo a passo interpretada pelo motor
+├── config_notas_v2.json                     # Notas fiscais agendadas para processamento
 │
-├── Application/
-│   └── FaturamentoOrchestrator.cs            # Orquestrador de fluxo e carregamento de contratos
+├── src/
+│   └── EmissorNotaFiscal/                   # Projeto Principal (Worker Process)
+│       ├── Program.cs                       # Bootstrapping e Injeção de Dependência
+│       ├── Worker.cs                        # BackgroundService hospedado
+│       ├── Application/                     # Orquestrador de fluxo e carregamento de contratos
+│       ├── Configuration/                   # Classes de opções/configurações fortemente tipadas
+│       ├── Domain/                          # Interfaces e Modelos de Domínio
+│       │   ├── Interfaces/                  # Contratos e Abstrações
+│       │   └── Models/                      # Modelos e Entidades de Domínio
+│       ├── Infrastructure/                  # Implementações concretas (Playwright, Storage, etc.)
+│       └── EmissorNotaFiscal.csproj         # Arquivo do Projeto Principal
 │
-├── Domain/
-│   ├── Interfaces/
-│   │   ├── IConfigRepository.cs              # Contrato de persistência de configurações JSON
-│   │   ├── ICaptchaSolverService.cs          # Contrato do resolvedor de Captcha via Vision AI
-│   │   └── INfeAutomationService.cs          # Contrato de serviços do motor do Playwright
-│   └── Models/
-│       ├── Automation/                       # Tipagens e enums de receita/ações
-│       │   ├── AcaoPasso.cs
-│       │   ├── EtapaExecucao.cs
-│       │   ├── FluxoAutomacaoContrato.cs
-│       │   └── TipoAcao.cs
-│       └── Faturamento/                      # Entidades de Notas Fiscais e Agendamentos
-│           ├── ConfigEmissor.cs
-│           ├── ConfigFaturamento.cs
-│           └── ItemNota.cs
-│
-├── Infrastructure/
-│   ├── Automation/
-│   │   ├── ContractBasedAutomationEngine.cs  # Motor concreto do Playwright que traduz a receita JSON
-│   │   └── OpenAiCompatibleCaptchaSolver.cs # Resolvedor de Captcha via API compatível com OpenAI
-│   └── Storage/
-│       └── JsonConfigRepository.cs           # Leitor/Gravador de configurações no disco
-│
-├── appsettings.json                          # Parâmetros operacionais do robô
-├── receita_paulistana.json                   # Receita passo a passo interpretada pelo motor
-└── config_notas_v2.json                      # Notas fiscais agendadas para processamento
+└── tests/
+    └── EmissorNotaFiscal.Tests/             # Projeto de Testes Unitários
+        ├── EmissorNotaFiscal.Tests.csproj   # Arquivo do Projeto de Testes
+        └── ...                              # Estruturas e classes de testes unitários
 ```
 
 ---
@@ -182,7 +171,7 @@ Cadastre os dados de emissão e os agendamentos das notas:
     dotnet build
     
     # Instale os navegadores
-    pwsh bin/Debug/net8.0/playwright.ps1 install chromium
+    pwsh src/EmissorNotaFiscal/bin/Debug/net8.0/playwright.ps1 install chromium
     ```
 
 3.  **Rodar a aplicação**:
