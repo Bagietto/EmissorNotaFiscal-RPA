@@ -8,6 +8,7 @@ using Microsoft.Playwright;
 
 namespace EmissorNotaFiscal.Infrastructure.Automation;
 
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class ContractBasedAutomationEngine : INfeAutomationService
 {
     private const string HeadlessConfigurationKey = "Automation:Headless";

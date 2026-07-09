@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace EmissorNotaFiscal;
 
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 public sealed class Worker : BackgroundService
 {
     private static readonly ActivitySource ActivitySource = new("EmissorNotaFiscal.Worker");
