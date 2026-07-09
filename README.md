@@ -198,7 +198,4 @@ Para ambientes de homologação e produção, prefira gerenciar dados sensíveis
 - [ ] **Persistência de Logs em Arquivos `.txt`**: Registro estruturado e rotativo de logs locais para auditoria facilitada de erros de rede, falhas de seletor ou falhas operacionais do portal.
 
 ---
-
-## 📄 Licença
-
-Este projeto é de uso restrito e privado. Qualquer reprodução ou distribuição sem consentimento prévio está sujeita a termos legais.
+Este projeto foi desenvolvido para fins de estudo, demostração tecnica e portifolio profissional. O uso em ambiente real deve considerar adequações de segurança, proteção de credenciais, gestão de senhas e chaves de acesso e eventuais atualizações de segurança do portal de serviços da prefeitura. 
