@@ -105,6 +105,67 @@
           "PlaywrightAcao": "AguardarCarregamento"
         }
       ]
+    },
+    {
+      "Ordem": 6,
+      "NomeEtapa": "Navegacao para Consulta de Confirmacao",
+      "Acoes": [
+        {
+          "Descricao": "Acessar menu Consulta de Notas",
+          "PlaywrightAcao": "ClicarBotao",
+          "SeletorHtml": "#ctl00_wpMenuLateral_mnuRotinasn4[href=\"consultas.aspx\"], #ctl00_wpMenuLateral_mnuRotinasn4 a[href=\"consultas.aspx\"], a[href*=\"consultas.aspx\"]"
+        },
+        {
+          "Descricao": "Aguardar carregamento da pagina de filtros",
+          "PlaywrightAcao": "AguardarCarregamento"
+        }
+      ]
+    },
+    {
+      "Ordem": 7,
+      "NomeEtapa": "Filtro pelo Tomador e Periodo",
+      "Acoes": [
+        {
+          "Descricao": "Preencher CNPJ do Cliente para consulta",
+          "PlaywrightAcao": "PreencherTexto",
+          "SeletorHtml": "#ctl00_body_tbCPFCNPJ",
+          "ValorDinamicoChave": "CnpjCliente"
+        },
+        {
+          "Descricao": "Selecionar Ano da Emissao",
+          "PlaywrightAcao": "SelecionarDropdown",
+          "SeletorHtml": "#ctl00_body_ddlExercicio",
+          "ValorDinamicoChave": "AnoEmissao"
+        },
+        {
+          "Descricao": "Selecionar Mes da Emissao",
+          "PlaywrightAcao": "SelecionarDropdown",
+          "SeletorHtml": "#ctl00_body_ddlMes",
+          "ValorDinamicoChave": "MesEmissao"
+        },
+        {
+          "Descricao": "Abrir popup de NFS-e emitidas",
+          "PlaywrightAcao": "ClicarBotaoEAguardarPopup",
+          "SeletorHtml": "#ctl00_body_btEmitidas"
+        }
+      ]
+    },
+    {
+      "Ordem": 8,
+      "NomeEtapa": "Abertura e Download do PDF",
+      "Acoes": [
+        {
+          "Descricao": "Abrir a nota fiscal recem-emitida",
+          "PlaywrightAcao": "ClicarLinkContendoDinamico",
+          "SeletorHtml": "a[href*=\"notaprint.aspx\"]",
+          "ValorDinamicoChave": "NumeroNota"
+        },
+        {
+          "Descricao": "Baixar PDF oficial da NFS-e",
+          "PlaywrightAcao": "DispararDownload",
+          "SeletorHtml": "input#btDownload, input[value=\"Download NFS-e\"]"
+        }
+      ]
     }
   ]
 }

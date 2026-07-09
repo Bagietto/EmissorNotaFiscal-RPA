@@ -85,6 +85,10 @@ sequenceDiagram
             E->>P: Aguarda intervenção manual do usuário no navegador visível
         end
     end
+    alt Consulta pós-emissão abre popup
+        P-->>E: Entrega novo contexto de página
+        E->>P: Continua o fluxo na janela de resultados
+    end
     P-->>E: Dispara evento de Download do PDF
     E->>E: Salva arquivo PDF com prefixo único de timestamp
     E-->>O: Retorna caminho absoluto do arquivo PDF
@@ -104,8 +108,24 @@ A automação é dirigida por dados através de uma receita estruturada (`receit
 | `ClicarBotao` | Clica em um botão ou link | `SeletorHtml` |
 | `ClicarSeExistir` | Tenta clicar de forma opcional (timeout curto) | `SeletorHtml` |
 | `DispararBlur` | Remove foco do seletor para rodar scripts JS nativos da página | `SeletorHtml` |
+| `SelecionarDropdown` | Seleciona uma opção em um `select` com valor dinâmico | `SeletorHtml` + `ValorDinamicoChave` |
+| `ClicarBotaoEAguardarPopup` | Clica em um controle que deve abrir uma nova janela/popup | `SeletorHtml` |
+| `ClicarLinkContendoDinamico` | Clica em um link que corresponda ao valor dinâmico da execução atual | `SeletorHtml` + `ValorDinamicoChave` |
+| `DispararDownload` | Dispara explicitamente o download final do documento | `SeletorHtml` |
 | `AguardarCarregamento` | Aguarda que a rede fique ociosa (`NetworkIdle`) | - |
 | `TratarDialogos` | Escuta e aceita diálogos/popups de alerta nativos | - |
+
+### Extensão Pós-Emissão
+
+O fluxo de emissão pode continuar além do clique final de emitir:
+
+- navegar para a tela de consulta de notas emitidas
+- filtrar por CPF/CNPJ do tomador e mês/ano correntes
+- assumir o contexto do popup de resultados quando o portal abrir nova janela
+- localizar a nota correspondente à execução atual
+- disparar o download do PDF oficial dessa nota
+
+O engine também valida antecipadamente se o diretório configurado para downloads aceita criação e escrita antes do login, falhando cedo quando a automação não conseguirá produzir o PDF final.
 
 ---
 

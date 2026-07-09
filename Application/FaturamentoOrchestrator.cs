@@ -111,7 +111,9 @@ public sealed class FaturamentoOrchestrator
                 $"A configuracao obrigatoria '{SenhaWebConfigurationKey}' nao foi informada para a execucao da automacao.");
         }
 
-        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        DateTime hoje = DateTime.Now;
+
+        Dictionary<string, string> dados = new(StringComparer.OrdinalIgnoreCase)
         {
             ["CnpjPrestador"] = configuracaoFaturamento.ConfiguracoesEmissor.CnpjPrestador,
             ["SenhaWeb"] = senhaWeb,
@@ -119,8 +121,18 @@ public sealed class FaturamentoOrchestrator
             ["DescricaoServico"] = itemSelecionado.DescricaoPersonalizada,
             ["ValorNota"] = itemSelecionado.ValorNota.ToString(System.Globalization.CultureInfo.InvariantCulture),
             ["RazaoSocialCliente"] = itemSelecionado.RazaoSocialPlaceholder,
-            ["EmailCliente"] = itemSelecionado.EmailCliente
+            ["EmailCliente"] = itemSelecionado.EmailCliente,
+            ["AnoEmissao"] = hoje.Year.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["MesEmissao"] = hoje.Month.ToString(System.Globalization.CultureInfo.InvariantCulture)
         };
+
+        string numeroNota = ExtrairNumeroNotaConhecido(itemSelecionado.UltimaEmissao);
+        if (!string.IsNullOrWhiteSpace(numeroNota))
+        {
+            dados["NumeroNota"] = numeroNota;
+        }
+
+        return dados;
     }
 
     private static void ValidarContratoCarregado(
@@ -134,5 +146,15 @@ public sealed class FaturamentoOrchestrator
             throw new InvalidOperationException(
                 $"O contrato carregado de '{receitaPath}' nao contem etapas executaveis.");
         }
+    }
+
+    private static string ExtrairNumeroNotaConhecido(string? valorOriginal)
+    {
+        if (string.IsNullOrWhiteSpace(valorOriginal))
+        {
+            return string.Empty;
+        }
+
+        return new string(valorOriginal.Where(char.IsDigit).ToArray());
     }
 }
