@@ -12,6 +12,7 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
 {
     private const string HeadlessConfigurationKey = "Automation:Headless";
     private const string DownloadsDirectoryConfigurationKey = "Automation:DownloadsDirectory";
+    private static readonly TimeSpan PopupTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan OptionalActionTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan AssistedModePollInterval = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan AssistedModeProgressLogInterval = TimeSpan.FromSeconds(30);
@@ -56,8 +57,7 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
         ArgumentNullException.ThrowIfNull(contrato);
         ArgumentNullException.ThrowIfNull(dicionarioDadosReais);
 
-        string downloadsDirectory = ResolveDownloadsDirectory();
-        Directory.CreateDirectory(downloadsDirectory);
+        string downloadsDirectory = EnsureDownloadsDirectoryIsReady();
 
         TaskCompletionSource<string> downloadPathSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -72,22 +72,36 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
         });
 
         IPage page = await browserContext.NewPageAsync();
+        AutomationRuntimeContext runtime = new(page);
+
         RegisterPageDiagnostics(page);
         RegisterDownloadCapture(page, downloadPathSource, downloadsDirectory);
-        await NavegarParaUrlInicialAsync(page, contrato);
+
+        browserContext.Page += (_, popupPage) =>
+        {
+            if (ReferenceEquals(popupPage, runtime.CurrentPage))
+            {
+                return;
+            }
+
+            RegisterPageDiagnostics(popupPage);
+            RegisterDownloadCapture(popupPage, downloadPathSource, downloadsDirectory);
+        };
+
+        await NavegarParaUrlInicialAsync(runtime, contrato);
 
         List<EtapaExecucao> etapasOrdenadas = contrato.Etapas.OrderBy(etapa => etapa.Ordem).ToList();
 
         foreach (EtapaExecucao etapa in etapasOrdenadas)
         {
-            await ExecutarEtapaAsync(page, contrato, etapa, dicionarioDadosReais);
+            await ExecutarEtapaAsync(runtime, contrato, etapa, dicionarioDadosReais);
         }
 
         return await ResolveDownloadedPdfPathAsync(downloadPathSource.Task);
     }
 
     private async Task ExecutarEtapaAsync(
-        IPage page,
+        AutomationRuntimeContext runtime,
         FluxoAutomacaoContrato contrato,
         EtapaExecucao etapa,
         IReadOnlyDictionary<string, string> dicionarioDadosReais)
@@ -101,7 +115,7 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
                 try
                 {
                     etapaExecutada |= await ExecutarPassoAsync(
-                        page,
+                        runtime,
                         contrato,
                         etapa,
                         acao,
@@ -146,11 +160,11 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
 
             try
             {
-                bool passoExecutado = await ExecutarPassoAsync(page, contrato, etapa, acao, dicionarioDadosReais);
+                bool passoExecutado = await ExecutarPassoAsync(runtime, contrato, etapa, acao, dicionarioDadosReais);
 
                 if (passoExecutado)
                 {
-                    await AguardarModoAssistidoSeNecessarioAsync(page, contrato, etapa, acaoIndex);
+                    await AguardarModoAssistidoSeNecessarioAsync(runtime.CurrentPage, contrato, etapa, acaoIndex);
                 }
             }
             catch (AutomationExecutionException)
@@ -176,7 +190,7 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
         }
     }
 
-    private async Task NavegarParaUrlInicialAsync(IPage page, FluxoAutomacaoContrato contrato)
+    private async Task NavegarParaUrlInicialAsync(AutomationRuntimeContext runtime, FluxoAutomacaoContrato contrato)
     {
         string urlInicial = ValidarUrlInicial(contrato.UrlInicial);
 
@@ -184,7 +198,7 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
 
         try
         {
-            await page.GotoAsync(urlInicial);
+            await runtime.CurrentPage.GotoAsync(urlInicial);
             _logger.LogInformation("Bootstrap de navegacao concluido para {UrlInicial}.", urlInicial);
         }
         catch (Exception ex)
@@ -204,7 +218,7 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
     }
 
     private async Task<bool> ExecutarPassoAsync(
-        IPage page,
+        AutomationRuntimeContext runtime,
         FluxoAutomacaoContrato contrato,
         EtapaExecucao etapa,
         AcaoPasso acao,
@@ -214,29 +228,45 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
         switch (acao.PlaywrightAcao)
         {
             case TipoAcao.Navegar:
-                await page.GotoAsync(ResolveNavigationTarget(contrato, acao, dicionarioDadosReais));
+                await runtime.CurrentPage.GotoAsync(ResolveNavigationTarget(contrato, acao, dicionarioDadosReais));
                 return true;
 
             case TipoAcao.PreencherTexto:
-                await PreencherTextoAsync(page, etapa, acao, dicionarioDadosReais);
+                await PreencherTextoAsync(runtime.CurrentPage, etapa, acao, dicionarioDadosReais);
                 return true;
 
             case TipoAcao.ClicarBotao:
-                return await ClickAsync(page, etapa, acao, passoOpcional || acao.Opcional);
+                return await ClickAsync(runtime.CurrentPage, etapa, acao, passoOpcional || acao.Opcional);
 
             case TipoAcao.ClicarSeExistir:
-                return await ClickAsync(page, etapa, acao, true, aguardarNavegacao: true);
+                return await ClickAsync(runtime.CurrentPage, etapa, acao, true, aguardarNavegacao: true);
 
             case TipoAcao.DispararBlur:
-                await DispararBlurAsync(page, acao);
+                await DispararBlurAsync(runtime.CurrentPage, acao);
                 return true;
 
             case TipoAcao.AguardarCarregamento:
-                await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+                await runtime.CurrentPage.WaitForLoadStateAsync(LoadState.NetworkIdle);
                 return true;
 
             case TipoAcao.TratarDialogos:
-                RegistrarTratamentoDialogos(page);
+                RegistrarTratamentoDialogos(runtime.CurrentPage);
+                return true;
+
+            case TipoAcao.SelecionarDropdown:
+                await SelecionarDropdownAsync(runtime.CurrentPage, etapa, acao, dicionarioDadosReais);
+                return true;
+
+            case TipoAcao.ClicarBotaoEAguardarPopup:
+                runtime.CurrentPage = await ClickAndSwitchToPopupAsync(runtime.CurrentPage, etapa, acao);
+                return true;
+
+            case TipoAcao.ClicarLinkContendoDinamico:
+                await ClicarLinkContendoValorDinamicoAsync(runtime.CurrentPage, etapa, acao, dicionarioDadosReais);
+                return true;
+
+            case TipoAcao.DispararDownload:
+                await DispararDownloadAsync(runtime.CurrentPage, etapa, acao);
                 return true;
 
             default:
@@ -314,6 +344,26 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
         await locator.FillAsync(valor);
     }
 
+    private static async Task SelecionarDropdownAsync(
+        IPage page,
+        EtapaExecucao etapa,
+        AcaoPasso acao,
+        IReadOnlyDictionary<string, string> dicionarioDadosReais)
+    {
+        if (string.IsNullOrWhiteSpace(acao.ValorDinamicoChave))
+        {
+            throw new AutomationExecutionException(
+                etapa.Ordem,
+                etapa.NomeEtapa,
+                acao.Descricao,
+                "O passo de selecao de dropdown exige uma chave de valor dinamico.");
+        }
+
+        string valor = GetRequiredRuntimeValue(acao.ValorDinamicoChave, acao.Descricao, dicionarioDadosReais);
+        ILocator locator = await LocalizarElementoVisivelAsync(page, acao.SeletorHtml);
+        await locator.SelectOptionAsync(new[] { valor });
+    }
+
     private static async Task GarantirSanfonaSenhaWebExpandidaAsync(IPage page)
     {
         try
@@ -354,6 +404,39 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
 
     private async Task<bool> ClickAsync(IPage page, EtapaExecucao etapa, AcaoPasso acao, bool opcional)
         => await ClickAsync(page, etapa, acao, opcional, aguardarNavegacao: false);
+
+    private async Task<IPage> ClickAndSwitchToPopupAsync(IPage page, EtapaExecucao etapa, AcaoPasso acao)
+    {
+        ILocator locator = await LocalizarElementoVisivelAsync(page, acao.SeletorHtml);
+        TaskCompletionSource<IPage> popupSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void HandlePopup(object? _, IPage popupPage) => popupSource.TrySetResult(popupPage);
+
+        page.Popup += HandlePopup;
+
+        try
+        {
+            await locator.ClickAsync();
+
+            Task completedTask = await Task.WhenAny(popupSource.Task, Task.Delay(PopupTimeout));
+            if (completedTask != popupSource.Task)
+            {
+                throw new AutomationExecutionException(
+                    etapa.Ordem,
+                    etapa.NomeEtapa,
+                    acao.Descricao,
+                    "O portal nao abriu o popup esperado apos o clique.");
+            }
+
+            IPage popup = await popupSource.Task;
+            await popup.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            return popup;
+        }
+        finally
+        {
+            page.Popup -= HandlePopup;
+        }
+    }
 
     private async Task<bool> ClickAsync(
         IPage page,
@@ -712,7 +795,7 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
     {
         try
         {
-            string diagnosticsDirectory = Path.Combine(ResolveDownloadsDirectory(), DiagnosticsDirectoryName);
+            string diagnosticsDirectory = Path.Combine(EnsureDownloadsDirectoryIsReady(), DiagnosticsDirectoryName);
             Directory.CreateDirectory(diagnosticsDirectory);
 
             string stamp = DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmssfff");
@@ -766,6 +849,82 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
                 element.blur();
             }",
             seletor);
+    }
+
+    private async Task ClicarLinkContendoValorDinamicoAsync(
+        IPage page,
+        EtapaExecucao etapa,
+        AcaoPasso acao,
+        IReadOnlyDictionary<string, string> dicionarioDadosReais)
+    {
+        string? valor = null;
+
+        if (!string.IsNullOrWhiteSpace(acao.ValorDinamicoChave)
+            && dicionarioDadosReais.TryGetValue(acao.ValorDinamicoChave, out string? valorInformado)
+            && !string.IsNullOrWhiteSpace(valorInformado))
+        {
+            valor = NormalizarTextoParaComparacao(valorInformado);
+        }
+
+        ILocator locator = page.Locator(GetRequiredSelector(acao));
+        await locator.First.WaitForAsync(new LocatorWaitForOptions
+        {
+            State = WaitForSelectorState.Visible
+        });
+
+        int quantidade = await locator.CountAsync();
+
+        for (int indice = 0; indice < quantidade; indice++)
+        {
+            ILocator item = locator.Nth(indice);
+            if (!await item.IsVisibleAsync())
+            {
+                continue;
+            }
+
+            if (valor is null)
+            {
+                _logger.LogWarning(
+                    "Valor dinamico para o passo '{DescricaoAcao}' nao foi informado. O primeiro link visivel correspondente sera utilizado.",
+                    acao.Descricao);
+                await item.ClickAsync();
+                return;
+            }
+
+            string texto = NormalizarTextoParaComparacao(await item.InnerTextAsync());
+            string href = NormalizarTextoParaComparacao(await item.GetAttributeAsync("href") ?? string.Empty);
+
+            if (texto.Contains(valor, StringComparison.OrdinalIgnoreCase)
+                || href.Contains(valor, StringComparison.OrdinalIgnoreCase))
+            {
+                await item.ClickAsync();
+                return;
+            }
+        }
+
+        throw new AutomationExecutionException(
+            etapa.Ordem,
+            etapa.NomeEtapa,
+            acao.Descricao,
+            $"Nenhum link correspondente ao valor dinamico '{acao.ValorDinamicoChave}' foi encontrado.");
+    }
+
+    private static async Task DispararDownloadAsync(IPage page, EtapaExecucao etapa, AcaoPasso acao)
+    {
+        try
+        {
+            ILocator locator = await LocalizarElementoVisivelAsync(page, acao.SeletorHtml);
+            await locator.ClickAsync();
+        }
+        catch (Exception ex) when (ex is not AutomationExecutionException)
+        {
+            throw new AutomationExecutionException(
+                etapa.Ordem,
+                etapa.NomeEtapa,
+                acao.Descricao,
+                "Falha ao disparar o download do PDF.",
+                ex);
+        }
     }
 
     private static async Task<ILocator> LocalizarElementoVisivelAsync(IPage page, string seletor)
@@ -908,10 +1067,29 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
         return _configuration?.GetValue<bool?>(HeadlessConfigurationKey) ?? true;
     }
 
-    private string ResolveDownloadsDirectory()
+    private string EnsureDownloadsDirectoryIsReady()
     {
-        return _configuration?.GetValue<string>(DownloadsDirectoryConfigurationKey)
+        string downloadsDirectory = _configuration?.GetValue<string>(DownloadsDirectoryConfigurationKey)
             ?? Path.Combine(AppContext.BaseDirectory, "downloads");
+
+        try
+        {
+            string fullPath = Path.GetFullPath(downloadsDirectory);
+            Directory.CreateDirectory(fullPath);
+
+            string probePath = Path.Combine(fullPath, $".write-test-{Guid.NewGuid():N}.tmp");
+            File.WriteAllText(probePath, "ok");
+            File.Delete(probePath);
+
+            return fullPath;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or NotSupportedException or ArgumentException)
+        {
+            throw new AutomationConfigurationException(
+                downloadsDirectory,
+                "Nao foi possivel preparar o diretorio de downloads configurado para a automacao.",
+                ex);
+        }
     }
 
     private static string GetRequiredRuntimeValue(
@@ -938,6 +1116,26 @@ public sealed class ContractBasedAutomationEngine : INfeAutomationService
 
         return acao.SeletorHtml;
     }
+
+    private static string NormalizarTextoParaComparacao(string? valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
+        {
+            return string.Empty;
+        }
+
+        return new string(valor.Where(char.IsLetterOrDigit).ToArray());
+    }
+
+    private sealed class AutomationRuntimeContext
+    {
+        public AutomationRuntimeContext(IPage currentPage)
+        {
+            CurrentPage = currentPage;
+        }
+
+        public IPage CurrentPage { get; set; }
+    }
 }
 
 public sealed class AutomationExecutionException : Exception
@@ -960,4 +1158,15 @@ public sealed class AutomationExecutionException : Exception
     public string NomeEtapa { get; }
 
     public string DescricaoAcao { get; }
+}
+
+public sealed class AutomationConfigurationException : Exception
+{
+    public AutomationConfigurationException(string directoryPath, string message, Exception? innerException = null)
+        : base($"{message} Diretorio: '{directoryPath}'. Motivo tecnico: {innerException?.Message}", innerException)
+    {
+        DirectoryPath = directoryPath;
+    }
+
+    public string DirectoryPath { get; }
 }

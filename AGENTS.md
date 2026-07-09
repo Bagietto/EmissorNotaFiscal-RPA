@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/014-resolucao-automatica-captcha-vision/plan.md`
+`specs/015-consulta-download-pdf-nota/plan.md`
 <!-- SPECKIT END -->
